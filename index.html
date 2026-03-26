@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>どくしょ貯金箱 📚💰</title>
+
+<!-- ▼ confetti -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<!-- ▼ フォント -->
+<link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@400;700&family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --pink:   #FF6B9D;
+  --pink2:  #FF8FB1;
+  --gold:   #FFD700;
+  --gold2:  #FFA500;
+  --purple: #C084FC;
+  --green:  #4ADE80;
+  --blue:   #60A5FA;
+  --dark:   #2D1B69;
+  --shadow: rgba(255,107,157,.3);
+  --r: 16px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  background: linear-gradient(135deg,#FFE4F0 0%,#FFF0E0 50%,#E8F4FF 100%);
+  min-height: 100vh; color: var(--dark); overflow-x: hidden;
+}
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(circle at 20% 20%,rgba(255,107,157,.12) 0%,transparent 50%),
+    radial-gradient(circle at 80% 80%,rgba(255,215,0,.12) 0%,transparent 50%),
+    radial-gradient(circle at 50% 50%,rgba(192,132,252,.08) 0%,transparent 60%);
+}
+header {
+  position:relative; z-index:10;
+  background:linear-gradient(135deg,var(--pink),var(--gold2));
+  padding:14px 20px 10px; text-align:center;
+  box-shadow:0 4px 20px var(--shadow);
+}
+header h1 {
+  font-family:'Kaisei Decol',serif;
+  font-size:clamp(1.3rem,5vw,1.9rem);
+  color:white; text-shadow:2px 2px 6px rgba(0,0,0,.2); letter-spacing:.04em;
+}
+.header-sub { font-size:.72rem; color:rgba(255,255,255,.85); margin-top:2px; }
+nav {
+  position:relative; z-index:10;
+  display:flex; background:white;
+  box-shadow:0 2px 12px rgba(0,0,0,.08); overflow-x:auto;
+}
+nav button {
+  flex:1; min-width:68px; padding:11px 6px;
+  border:none; background:transparent;
+  font-family:inherit; font-size:.78rem; font-weight:700;
+  color:#999; cursor:pointer; transition:all .2s;
+  border-bottom:3px solid transparent; white-space:nowrap;
+}
+nav button.active { color:var(--pink); border-bottom-color:var(--pink); background:linear-gradient(180deg,white,#FFF0F5); }
+nav button:hover:not(.active) { color:var(--pink2); background:#FFF8FB; }
+main {
+  position:relative; z-index:1;
+  max-width:540px; margin:0 auto;
+  padding:16px 16px 88px;
+}
+.section { display:none; }
+.section.active { display:block; animation:fadeUp .3s ease; }
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(14px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.card {
+  background:white; border-radius:var(--r);
+  padding:20px; box-shadow:0 4px 20px rgba(0,0,0,.07);
+  margin-bottom:16px; border:1.5px solid rgba(255,107,157,.1);
+}
+.card-title {
+  font-size:.78rem; font-weight:800; color:var(--pink);
+  letter-spacing:.08em; margin-bottom:12px;
+  display:flex; align-items:center; gap:6px;
+}
+.piggy-box {
+  background:linear-gradient(135deg,#FF6B9D,#FFD700);
+  border-radius:20px; padding:24px 20px;
+  text-align:center; color:white;
+  box-shadow:0 8px 32px rgba(255,107,157,.35);
+  margin-bottom:20px; position:relative; overflow:hidden;
+}
+.piggy-box::before {
+  content:'💰'; position:absolute; font-size:120px;
+  right:-20px; top:-20px; opacity:.12; transform:rotate(15deg);
+}
+.piggy-label { font-size:.85rem; opacity:.9; margin-bottom:4px; }
+.piggy-amount {
+  font-family:'Kaisei Decol',serif;
+  font-size:clamp(2.4rem,10vw,3.8rem);
+  font-weight:700; line-height:1;
+  text-shadow:0 2px 12px rgba(0,0,0,.15);
+}
+.piggy-unit { font-size:1.1rem; vertical-align:top; margin-top:.45rem; display:inline-block; }
+.piggy-user { font-size:.85rem; opacity:.9; margin-top:8px; }
+.form-group { margin-bottom:13px; }
+label { display:block; font-size:.76rem; font-weight:700; color:#666; margin-bottom:4px; }
+.form-row { display:flex; gap:8px; }
+.form-row .form-group { flex:1; }
+input, select {
+  width:100%; padding:10px 13px;
+  border:2px solid #E5E7EB; border-radius:10px;
+  font-family:inherit; font-size:.93rem; color:var(--dark);
+  background:#FAFAFA; transition:border-color .2s,box-shadow .2s;
+}
+input:focus, select:focus {
+  outline:none; border-color:var(--pink);
+  box-shadow:0 0 0 3px rgba(255,107,157,.15); background:white;
+}
+input[readonly] { background:#F5F5F5; color:#888; }
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:12px 20px; border-radius:12px; border:none;
+  font-family:inherit; font-size:.9rem; font-weight:800;
+  cursor:pointer; transition:all .2s; width:100%;
+}
+.btn-primary {
+  background:linear-gradient(135deg,var(--pink),var(--gold2));
+  color:white; box-shadow:0 4px 16px var(--shadow);
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px var(--shadow); }
+.btn-primary:active { transform:translateY(0); }
+.btn-secondary { background:white; color:var(--pink); border:2px solid var(--pink); }
+.btn-secondary:hover { background:#FFF0F5; }
+.btn-scan {
+  background:linear-gradient(135deg,var(--purple),var(--blue));
+  color:white; box-shadow:0 4px 16px rgba(192,132,252,.4);
+  margin-bottom:12px;
+}
+.btn-sm { padding:7px 13px; font-size:.8rem; width:auto; border-radius:8px; }
+.btn-link {
+  background:none; border:none; color:#AAA;
+  font-size:.75rem; font-weight:700; cursor:pointer;
+  padding:4px 0; width:auto; text-decoration:underline;
+}
+#camera-wrapper {
+  display:none; position:relative;
+  width:100%; background:#000;
+  border-radius:12px; overflow:hidden; margin-bottom:12px;
+}
+#camera-wrapper.active { display:block; }
+video { width:100%; display:block; max-height:260px; object-fit:cover; }
+.scan-overlay {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  pointer-events:none;
+}
+.scan-frame {
+  width:220px; height:80px;
+  border:3px solid var(--gold); border-radius:8px; position:relative;
+  box-shadow:0 0 0 2000px rgba(0,0,0,.45);
+}
+.scan-line {
+  position:absolute; left:0; right:0; top:0;
+  height:2px; background:var(--gold);
+  animation:scanMove 1.5s ease-in-out infinite;
+  box-shadow:0 0 8px var(--gold);
+}
+@keyframes scanMove { 0%,100%{top:0} 50%{top:calc(100% - 2px)} }
+.scan-hint { font-size:.72rem; color:rgba(255,255,255,.8); margin-top:8px; text-align:center; }
+#camera-error {
+  display:none; background:#FFF0F5; border:2px solid var(--pink);
+  border-radius:10px; padding:12px 14px; font-size:.8rem;
+  color:var(--dark); margin-bottom:12px; line-height:1.8;
+}
+#camera-error.visible { display:block; }
+.book-info {
+  display:none; background:linear-gradient(135deg,#F0F7FF,#F0FFF4);
+  border-radius:12px; padding:14px;
+  border:2px solid var(--blue); margin-bottom:14px;
+}
+.book-info.visible { display:block; animation:fadeUp .3s ease; }
+.book-info-title { font-weight:800; font-size:.98rem; margin-bottom:5px; }
+.book-info-meta { font-size:.8rem; color:#555; line-height:1.9; }
+.calc-preview {
+  display:none; background:linear-gradient(135deg,#FFF0F5,#FFFBF0);
+  border-radius:12px; padding:14px;
+  border:2px solid var(--gold); margin-bottom:14px;
+}
+.calc-preview.visible { display:block; }
+.calc-row { display:flex; justify-content:space-between; font-size:.82rem; margin-bottom:4px; }
+.calc-row.total {
+  font-weight:800; font-size:1rem; color:var(--pink);
+  border-top:1px solid #FFE8; padding-top:8px; margin-top:4px;
+}
+.history-item {
+  background:white; border-radius:12px; padding:13px 15px;
+  margin-bottom:10px; border:1.5px solid #F0F0F0;
+  display:flex; align-items:flex-start; gap:11px;
+  transition:box-shadow .2s;
+}
+.history-item:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); }
+.history-icon {
+  width:42px; height:42px; border-radius:10px;
+  background:linear-gradient(135deg,var(--pink),var(--gold));
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.15rem; flex-shrink:0;
+}
+.history-info { flex:1; min-width:0; }
+.history-book { font-weight:700; font-size:.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.history-meta { font-size:.73rem; color:#888; margin-top:2px; line-height:1.6; }
+.history-amount { font-family:'Kaisei Decol',serif; font-size:1.05rem; font-weight:700; color:var(--pink); white-space:nowrap; }
+.badge-complete {
+  display:inline-block; background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:white; font-size:.62rem; font-weight:800;
+  padding:2px 7px; border-radius:20px; margin-left:4px;
+}
+.sort-bar { display:flex; gap:6px; margin-bottom:13px; flex-wrap:wrap; }
+.sort-btn {
+  padding:6px 11px; border-radius:20px; border:2px solid #E5E7EB;
+  background:white; font-family:inherit; font-size:.73rem; font-weight:700;
+  color:#999; cursor:pointer; transition:all .2s;
+}
+.sort-btn.active { border-color:var(--pink); color:var(--pink); background:#FFF0F5; }
+.progress-bar { width:100%; height:7px; background:#F0F0F0; border-radius:4px; overflow:hidden; margin-top:5px; }
+.progress-fill {
+  height:100%; border-radius:4px;
+  background:linear-gradient(90deg,var(--pink),var(--gold));
+  transition:width .5s ease;
+}
+.rank-item {
+  background:white; border-radius:12px; padding:13px 15px;
+  margin-bottom:10px; display:flex; align-items:center; gap:13px;
+  border:1.5px solid #F0F0F0; cursor:pointer; transition:all .2s;
+}
+.rank-item:hover { box-shadow:0 4px 16px rgba(0,0,0,.1); transform:translateX(3px); }
+.rank-num {
+  width:36px; height:36px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Kaisei Decol',serif; font-weight:700; font-size:.95rem; flex-shrink:0;
+}
+.rank-1 { background:linear-gradient(135deg,#FFD700,#FFA500); color:white; box-shadow:0 3px 10px rgba(255,165,0,.4); }
+.rank-2 { background:linear-gradient(135deg,#C0C0C0,#A0A0A0); color:white; }
+.rank-3 { background:linear-gradient(135deg,#CD7F32,#B8651A); color:white; }
+.rank-other { background:#F3F4F6; color:#666; }
+.rank-info { flex:1; min-width:0; }
+.rank-name { font-weight:800; font-size:.93rem; }
+.rank-class { font-size:.72rem; color:#999; }
+.rank-stats { display:flex; gap:7px; margin-top:3px; }
+.rank-stat { font-size:.7rem; color:#888; background:#F8F8F8; padding:2px 7px; border-radius:20px; }
+.rank-amount { font-family:'Kaisei Decol',serif; font-size:1.1rem; font-weight:700; color:var(--gold2); white-space:nowrap; }
+.modal-overlay {
+  display:none; position:fixed; inset:0; z-index:100;
+  background:rgba(0,0,0,.5); backdrop-filter:blur(4px);
+  align-items:flex-end; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:white; width:100%; max-width:540px;
+  border-radius:20px 20px 0 0; padding:24px 20px 40px;
+  max-height:80vh; overflow-y:auto;
+  animation:slideUp .3s ease;
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-handle { width:40px; height:4px; background:#DDD; border-radius:2px; margin:0 auto 20px; }
+.modal-title { font-family:'Kaisei Decol',serif; font-size:1.05rem; font-weight:700; margin-bottom:14px; }
+.modal-book {
+  display:flex; align-items:center; gap:10px;
+  padding:10px; border-radius:10px; background:#F8F8F8; margin-bottom:8px;
+}
+.modal-book-icon { font-size:1.35rem; }
+.modal-book-info { flex:1; }
+.modal-book-title { font-size:.86rem; font-weight:700; }
+.modal-book-author { font-size:.73rem; color:#888; }
+.loading { text-align:center; padding:36px; color:#BBB; }
+.spinner {
+  width:30px; height:30px; border:3px solid #F0F0F0;
+  border-top-color:var(--pink); border-radius:50%;
+  animation:spin .8s linear infinite; margin:0 auto 10px;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+#toast {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(30px);
+  background:var(--dark); color:white; padding:11px 22px;
+  border-radius:24px; font-size:.82rem; font-weight:700;
+  opacity:0; transition:all .3s; z-index:200; white-space:nowrap; pointer-events:none;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.setup-card {
+  background:white; border-radius:20px; padding:28px 22px;
+  text-align:center; box-shadow:0 8px 32px rgba(0,0,0,.1); margin-top:16px;
+}
+.setup-emoji { font-size:3.5rem; margin-bottom:13px; }
+.setup-title { font-family:'Kaisei Decol',serif; font-size:1.3rem; margin-bottom:7px; }
+.setup-desc { font-size:.82rem; color:#888; margin-bottom:16px; line-height:1.75; }
+.setup-group-label {
+  font-size:.72rem; font-weight:800; color:var(--pink);
+  letter-spacing:.08em; margin:14px 0 7px; text-align:left;
+  display:flex; align-items:center; gap:6px;
+}
+.setup-group-label::after { content:''; flex:1; height:1px; background:#F0E0F0; }
+.num-select-row { display:flex; gap:6px; }
+.num-select-row select { flex:1; }
+.empty-state { text-align:center; padding:44px 20px; color:#CCC; }
+.empty-state .e { font-size:2.8rem; margin-bottom:10px; }
+.empty-state p { font-size:.82rem; }
+ruby rt { font-size:.55em; color:var(--pink); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 <ruby>どくしょ<rt>読書</rt></ruby>ちょきんばこ 💰</h1>
+  <div class="header-sub">よんだページが、おこづかいになる！</div>
+</header>
+
+<nav>
+  <button class="active" onclick="showSection('home')" id="nav-home">🏠 ホーム</button>
+  <button onclick="showSection('record')" id="nav-record">✏️ きろく</button>
+  <button onclick="showSection('history')" id="nav-history">📖 れきし</button>
+  <button onclick="showSection('ranking')" id="nav-ranking">🏆 ランキング</button>
+</nav>
+
+<main>
+
+<!-- ホーム -->
+<div class="section active" id="sec-home">
+  <div id="setup-view" class="setup-card" style="display:none;">
+    <div class="setup-emoji">👋</div>
+    <div class="setup-title">はじめましょう！</div>
+    <div class="setup-desc">あなたのじょうほうをいれてね。<br>つぎからは じどうで おぼえてくれるよ。</div>
+
+    <div class="setup-group-label">📋 <ruby>学年<rt>がくねん</rt></ruby>・<ruby>組<rt>くみ</rt></ruby>・<ruby>番号<rt>ばんごう</rt></ruby></div>
+    <div class="num-select-row">
+      <select id="setup-grade">
+        <option value="">学年</option>
+        <option>1年</option><option>2年</option><option>3年</option>
+        <option>4年</option><option>5年</option><option>6年</option>
+      </select>
+      <select id="setup-cls">
+        <option value="">組</option>
+        <option>1組</option><option>2組</option><option>3組</option>
+        <option>4組</option><option>5組</option><option>6組</option>
+      </select>
+      <select id="setup-num">
+        <option value="">番号</option>
+      </select>
+    </div>
+
+    <div class="setup-group-label">👤 なまえ</div>
+    <div class="form-group" style="text-align:left;">
+      <input type="text" id="setup-name" placeholder="例：たろう" autocomplete="off">
+    </div>
+
+    <div class="setup-group-label">🔗 GAS URL</div>
+    <div class="form-group" style="text-align:left;">
+      <input type="url" id="setup-gasurl"
+        placeholder="https://script.google.com/macros/s/.../exec"
+        style="font-size:.78rem;">
+      <div style="font-size:.68rem;color:#AAA;margin-top:4px;">
+        GASをデプロイしたときの「ウェブアプリのURL」を貼り付けてね。最初に1回だけ必要だよ。
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveSetup()" style="margin-top:4px;">🚀 スタート！</button>
+  </div>
+
+  <div id="dashboard-view" style="display:none;">
+    <div class="piggy-box">
+      <div class="piggy-label">💰 <span id="dash-user">---</span> の <ruby>貯金<rt>ちょきん</rt></ruby></div>
+      <div>
+        <span class="piggy-amount" id="dash-amount">0</span>
+        <span class="piggy-unit">円</span>
+      </div>
+      <div class="piggy-user" id="dash-class">---</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 <ruby>今日<rt>きょう</rt></ruby>の <ruby>記録<rt>きろく</rt></ruby></div>
+      <div id="today-list">
+        <div class="loading"><div class="spinner"></div><div>よみこみ中…</div></div>
+      </div>
+    </div>
+    <button class="btn-link" onclick="changeUser()" style="display:block;text-align:center;margin:0 auto;">🔄 べつのひとに きりかえる</button>
+  </div>
+</div>
+
+<!-- きろく -->
+<div class="section" id="sec-record">
+  <div id="record-user-bar" class="card" style="padding:12px 16px;margin-bottom:12px;display:none;">
+    <div style="font-size:.76rem;color:#AAA;">きろくするひと</div>
+    <div style="font-weight:800;font-size:.93rem;" id="record-user-label">---</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📷 バーコードスキャン</div>
+    <button class="btn btn-scan" id="scan-btn" onclick="toggleCamera()">
+      📷 カメラで ISBNを よみとる
+    </button>
+    <div id="camera-wrapper">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="scan-overlay">
+        <div>
+          <div class="scan-frame"><div class="scan-line"></div></div>
+          <div class="scan-hint">バーコードを わくの なかに いれてね</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>ISBN（バーコードのばんごう）</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="isbn-input" placeholder="例：9784001140132" inputmode="numeric">
+        <button class="btn btn-secondary btn-sm" onclick="fetchBook()">🔍 けんさく</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="book-info" id="book-info">
+    <div class="book-info-title" id="bi-title">—</div>
+    <div class="book-info-meta">
+      ✏️ <span id="bi-author">—</span><br>
+      📄 <ruby>全<rt>ぜん</rt></ruby><span id="bi-pages">—</span>ページ　💴 <span id="bi-price">—</span>円
+    </div>
+  </div>
+
+  <div class="card" id="record-form" style="display:none;">
+    <div class="card-title">✏️ きょう よんだページをいれよう</div>
+    <div class="form-group">
+      <label><ruby>今日<rt>きょう</rt></ruby> よんだ <ruby>最後<rt>さいご</rt></ruby>のページ（<ruby>累計<rt>るいけい</rt></ruby>）</label>
+      <input type="number" id="pages-read" placeholder="例：42" min="1" oninput="calcPreview()">
+    </div>
+    <div class="calc-preview" id="calc-preview">
+      <div class="calc-row"><span>よんだ わりあい</span><span id="prev-ratio">—</span></div>
+      <div class="calc-row"><span>本の ねだん</span><span id="prev-price">—</span></div>
+      <div class="calc-row total"><span>💰 ちょきん</span><span id="prev-savings">— 円</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="prev-bar" style="width:0%;"></div></div>
+    </div>
+    <button class="btn btn-primary" onclick="submitRecord()">💰 ちょきんする！</button>
+  </div>
+</div>
+
+<!-- れきし -->
+<div class="section" id="sec-history">
+  <div class="sort-bar">
+    <button class="sort-btn active" onclick="sortHistory(this,'date')">🕐 <ruby>新着<rt>しんちゃく</rt></ruby></button>
+    <button class="sort-btn" onclick="sortHistory(this,'author')">✏️ <ruby>著者<rt>ちょしゃ</rt></ruby></button>
+    <button class="sort-btn" onclick="sortHistory(this,'savings')">💰 <ruby>金額<rt>きんがく</rt></ruby></button>
+    <button class="sort-btn" onclick="sortHistory(this,'completed')">✅ <ruby>読破<rt>どくは</rt></ruby></button>
+  </div>
+  <div id="history-list">
+    <div class="loading"><div class="spinner"></div><div>よみこみ中…</div></div>
+  </div>
+</div>
+
+<!-- ランキング -->
+<div class="section" id="sec-ranking">
+  <div class="card" style="background:linear-gradient(135deg,#FFF9E6,#FFF0F5);">
+    <div class="card-title">🏆 みんなの ランキング</div>
+    <div style="font-size:.74rem;color:#AAA;margin-bottom:10px;">なまえをタップすると よんでいる 本が みられるよ！</div>
+    <div id="ranking-list">
+      <div class="loading"><div class="spinner"></div><div>よみこみ中…</div></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- 本モーダル -->
+<div class="modal-overlay" id="user-modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">📚 よんでいる本</div>
+    <div id="modal-books"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  どくしょ貯金箱 — フロントエンド（GitHub Pages版）
+//  通信: 読み取り=JSONP / 書き込み=fetch no-cors
+// ══════════════════════════════════════════════════════
+
+const LS = {
+  NAME:   'dokucho_name',
+  GRADE:  'dokucho_grade',
+  CLS:    'dokucho_cls',
+  NUM:    'dokucho_num',
+  GASURL: 'dokucho_gasurl'
+};
+
+let GAS_URL      = '';
+let currentName  = '';
+let currentGrade = '';
+let currentCls   = '';
+let currentNum   = '';
+let currentClass = '';
+let currentBook  = null;
+let historyData  = [];
+let sortKey = 'date';
+let sortAsc = false;
+let codeReader  = null;
+let mediaStream = null;
+let scanning    = false;
+
+// ══════════════════════════════════════════════════════
+//  API通信
+// ══════════════════════════════════════════════════════
+
+// 読み取り: JSONP（CORSを完全回避）
+function jsonpCall(params) {
+  return new Promise((resolve, reject) => {
+    const cbName = '_cb' + Date.now() + Math.floor(Math.random()*9999);
+    window[cbName] = data => {
+      delete window[cbName];
+      document.getElementById('jsonp-tag') && document.getElementById('jsonp-tag').remove();
+      resolve(data);
+    };
+    const qs  = new URLSearchParams({ ...params, callback: cbName }).toString();
+    const tag = document.createElement('script');
+    tag.id  = 'jsonp-tag';
+    tag.src = GAS_URL + '?' + qs;
+    tag.onerror = () => {
+      delete window[cbName];
+      reject(new Error('JSONP通信エラー'));
+    };
+    setTimeout(() => {
+      delete window[cbName];
+      reject(new Error('JSONP タイムアウト'));
+    }, 15000);
+    document.head.appendChild(tag);
+  });
+}
+
+// 書き込み: fetch no-cors（レスポンスは受け取れないが処理は走る）
+function noCorsFetch(params) {
+  return fetch(GAS_URL, {
+    method:  'POST',
+    mode:    'no-cors',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    new URLSearchParams(params).toString()
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  初期化
+// ══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // 番号セレクト 1〜40
+  const numSel = document.getElementById('setup-num');
+  for (let i = 1; i <= 40; i++) {
+    const o = document.createElement('option');
+    o.value = o.textContent = i + '番';
+    numSel.appendChild(o);
+  }
+
+  // キャッシュ復元
+  GAS_URL          = localStorage.getItem(LS.GASURL) || '';
+  const sName      = localStorage.getItem(LS.NAME)   || '';
+  const sGrade     = localStorage.getItem(LS.GRADE)  || '';
+  const sCls       = localStorage.getItem(LS.CLS)    || '';
+  const sNum       = localStorage.getItem(LS.NUM)    || '';
+
+  if (sGrade) document.getElementById('setup-grade').value  = sGrade;
+  if (sCls)   document.getElementById('setup-cls').value    = sCls;
+  if (sNum)   document.getElementById('setup-num').value    = sNum;
+  if (GAS_URL) document.getElementById('setup-gasurl').value = GAS_URL;
+
+  if (sName && sGrade && sCls && GAS_URL) {
+    currentName = sName; currentGrade = sGrade;
+    currentCls  = sCls;  currentNum   = sNum;
+    currentClass = sGrade + sCls;
+    showDashboard();
+  } else {
+    showSetup();
+  }
+
+  // ZXing 非同期ロード
+  loadZXing();
+});
+
+function loadZXing() {
+  if (typeof ZXing !== 'undefined') return;
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';
+  document.head.appendChild(s);
+}
+
+// ══════════════════════════════════════════════════════
+//  セットアップ
+// ══════════════════════════════════════════════════════
+function showSetup() {
+  document.getElementById('setup-view').style.display     = 'block';
+  document.getElementById('dashboard-view').style.display = 'none';
+}
+
+function showDashboard() {
+  document.getElementById('setup-view').style.display     = 'none';
+  document.getElementById('dashboard-view').style.display = 'block';
+  document.getElementById('dash-user').textContent   = currentName;
+  document.getElementById('dash-class').textContent  = currentClass + ' ' + currentNum;
+  document.getElementById('record-user-label').textContent =
+    currentName + '（' + currentClass + ' ' + currentNum + '）';
+  document.getElementById('record-user-bar').style.display = 'block';
+  loadDashboard();
+}
+
+function saveSetup() {
+  const grade  = document.getElementById('setup-grade').value;
+  const cls    = document.getElementById('setup-cls').value;
+  const num    = document.getElementById('setup-num').value;
+  const name   = document.getElementById('setup-name').value.trim();
+  const gasurl = document.getElementById('setup-gasurl').value.trim();
+
+  if (!grade)  { toast('学年をえらんでね！'); return; }
+  if (!cls)    { toast('組をえらんでね！');   return; }
+  if (!num)    { toast('番号をえらんでね！'); return; }
+  if (!name)   { toast('なまえをいれてね！'); return; }
+  if (!gasurl || !gasurl.startsWith('https://script.google.com/')) {
+    toast('GASのURLをかくにんしてね（https://script.google.com/... から始まるURL）'); return;
+  }
+
+  currentGrade = grade; currentCls = cls;
+  currentNum   = num;   currentName = name;
+  currentClass = grade + cls;
+  GAS_URL      = gasurl;
+
+  localStorage.setItem(LS.NAME,   name);
+  localStorage.setItem(LS.GRADE,  grade);
+  localStorage.setItem(LS.CLS,    cls);
+  localStorage.setItem(LS.NUM,    num);
+  localStorage.setItem(LS.GASURL, gasurl);
+
+  showDashboard();
+}
+
+function changeUser() {
+  currentName = currentGrade = currentCls = currentNum = currentClass = '';
+  document.getElementById('setup-grade').value  = localStorage.getItem(LS.GRADE)  || '';
+  document.getElementById('setup-cls').value    = localStorage.getItem(LS.CLS)    || '';
+  document.getElementById('setup-num').value    = localStorage.getItem(LS.NUM)    || '';
+  document.getElementById('setup-gasurl').value = localStorage.getItem(LS.GASURL) || '';
+  document.getElementById('setup-name').value   = '';
+  showSetup();
+  document.getElementById('dashboard-view').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════════
+//  ナビゲーション
+// ══════════════════════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+  stopCamera();
+  if (id === 'history') loadHistory();
+  if (id === 'ranking') loadRanking();
+}
+
+// ══════════════════════════════════════════════════════
+//  ダッシュボード
+// ══════════════════════════════════════════════════════
+async function loadDashboard() {
+  if (!currentName || !currentClass || !GAS_URL) return;
+  try {
+    const res = await jsonpCall({ action: 'getHistory', userName: currentName, className: currentClass });
+    if (!res.success) return;
+    animateAmount('dash-amount', res.total);
+    const today      = todayStr();
+    const todayItems = res.history.filter(h => h.date === today);
+    const el         = document.getElementById('today-list');
+    el.innerHTML = todayItems.length
+      ? todayItems.map(historyHTML).join('')
+      : '<div class="empty-state"><div class="e">📖</div><p>きょうはまだきろくがないよ。<br>本をよんでちょきんしよう！</p></div>';
+  } catch(e) { console.warn('loadDashboard:', e); }
+}
+
+// ══════════════════════════════════════════════════════
+//  カメラ（GitHub PagesなのでgetUserMedia使用可）
+// ══════════════════════════════════════════════════════
+async function toggleCamera() {
+  if (scanning) { stopCamera(); return; }
+
+  if (typeof ZXing === 'undefined') {
+    toast('スキャナーをよみこみ中… もう一度おしてね'); loadZXing(); return;
+  }
+
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+      audio: false
+    });
+    const video = document.getElementById('video');
+    video.srcObject = mediaStream;
+    await video.play().catch(() => {});
+
+    document.getElementById('camera-wrapper').classList.add('active');
+    document.getElementById('scan-btn').textContent = '⏹ カメラを とめる';
+    scanning = true;
+
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,
+      [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8]);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    codeReader = new ZXing.BrowserMultiFormatReader(hints);
+    codeReader.decodeFromStream(mediaStream, video, result => {
+      if (!result) return;
+      const isbn = result.getText().replace(/[^0-9X]/gi, '');
+      if (isbn.length === 13 || isbn.length === 10) {
+        document.getElementById('isbn-input').value = isbn;
+        stopCamera();
+        fetchBook();
+      }
+    });
+  } catch(e) {
+    stopCamera();
+    toast('📵 カメラエラー: ' + e.message);
+  }
+}
+
+function stopCamera() {
+  if (codeReader)  { try { codeReader.reset(); } catch(_){} codeReader = null; }
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  document.getElementById('camera-wrapper').classList.remove('active');
+  document.getElementById('scan-btn').textContent = '📷 カメラで ISBNを よみとる';
+  scanning = false;
+}
+
+// ══════════════════════════════════════════════════════
+//  本の情報取得（OpenBDを直接fetch — CORSフリー）
+// ══════════════════════════════════════════════════════
+async function fetchBook() {
+  const isbn = document.getElementById('isbn-input').value.trim().replace(/[^0-9X]/gi, '');
+  if (isbn.length !== 13 && isbn.length !== 10) {
+    toast('ISBNのばんごうをかくにんしてね（13けたか10けた）'); return;
+  }
+  toast('⏳ 本のじょうほうをよみこみ中…');
+  try {
+    // OpenBDは直接fetchできる（CORSヘッダーあり）
+    const resp = await fetch('https://api.openbd.jp/v1/get?isbn=' + isbn);
+    const json = await resp.json();
+    if (!json || !json[0]) { toast('📕 本が みつかりませんでした。ISBNをかくにんしてね。'); return; }
+
+    const summary = json[0].summary;
+    const title   = summary.title  || '（タイトル不明）';
+    const author  = summary.author || '（著者不明）';
+    const price   = Number(String(summary.price || '0').replace(/[^\d]/g, '')) || 0;
+    let   pages   = 0;
+    try {
+      const ext = json[0].onix.DescriptiveDetail.Extent;
+      if (Array.isArray(ext)) {
+        const p = ext.find(e => e.ExtentType === '11');
+        if (p) pages = Number(p.ExtentValue) || 0;
+      }
+    } catch(_) {}
+
+    currentBook = { title, author, price, pages, isbn };
+    document.getElementById('bi-title').textContent  = title;
+    document.getElementById('bi-author').textContent = author;
+    document.getElementById('bi-pages').textContent  = pages || '?';
+    document.getElementById('bi-price').textContent  = price.toLocaleString();
+    document.getElementById('book-info').classList.add('visible');
+    document.getElementById('record-form').style.display = 'block';
+    document.getElementById('pages-read').value = '';
+    document.getElementById('calc-preview').classList.remove('visible');
+    toast('📚 ' + title + ' が みつかったよ！');
+  } catch(e) { toast('よみこみに しっぱいしました: ' + e.message); }
+}
+
+// ══════════════════════════════════════════════════════
+//  計算プレビュー
+// ══════════════════════════════════════════════════════
+function calcPreview() {
+  if (!currentBook) return;
+  const read  = Number(document.getElementById('pages-read').value);
+  const total = Number(currentBook.pages) || 1;
+  const price = Number(currentBook.price);
+  if (!read || read <= 0) { document.getElementById('calc-preview').classList.remove('visible'); return; }
+  const ratio   = Math.min(read / total, 1.0);
+  const savings = Math.round(ratio * price);
+  const pct     = Math.round(ratio * 100);
+  document.getElementById('prev-ratio').textContent   = pct + '%';
+  document.getElementById('prev-price').textContent   = price.toLocaleString() + ' 円';
+  document.getElementById('prev-savings').textContent = savings.toLocaleString() + ' 円';
+  document.getElementById('prev-bar').style.width     = pct + '%';
+  document.getElementById('calc-preview').classList.add('visible');
+}
+
+// ══════════════════════════════════════════════════════
+//  記録送信（fetch no-cors）
+// ══════════════════════════════════════════════════════
+async function submitRecord() {
+  if (!currentName) { toast('まず ホームでなまえをとうろくしてね！'); return; }
+  if (!currentBook) { toast('さきに 本をよみこんでね！'); return; }
+  const read = Number(document.getElementById('pages-read').value);
+  if (!read || read <= 0) { toast('よんだページをいれてね！'); return; }
+
+  const pagesRead  = read;
+  const totalPages = Number(currentBook.pages) || 1;
+  const price      = Number(currentBook.price);
+  const ratio      = Math.min(pagesRead / totalPages, 1.0);
+  const savings    = Math.round(ratio * price);
+  const completed  = ratio >= 1.0;
+
+  // no-cors なのでレスポンスは opaque（中身は見えない）
+  // 楽観的UIで先に成功表示する
+  try {
+    await noCorsFetch({
+      action:     'saveSavings',
+      userName:   currentName,
+      className:  currentClass,
+      number:     currentNum,
+      title:      currentBook.title,
+      author:     currentBook.author,
+      isbn:       currentBook.isbn,
+      pagesRead:  pagesRead,
+      totalPages: totalPages,
+      price:      price
+    });
+  } catch(e) {
+    // no-corsは基本エラーにならないが念のため
+    console.warn('noCorsFetch:', e);
+  }
+
+  // 楽観的表示
+  fireConfetti(completed);
+  toast(completed
+    ? '🎉 よみきった！ ＋' + savings.toLocaleString() + '円 ちょきんしたよ！'
+    : '💰 ＋' + savings.toLocaleString() + '円 ちょきんしたよ！');
+
+  currentBook = null;
+  document.getElementById('isbn-input').value = '';
+  document.getElementById('pages-read').value = '';
+  document.getElementById('book-info').classList.remove('visible');
+  document.getElementById('record-form').style.display = 'none';
+  document.getElementById('calc-preview').classList.remove('visible');
+
+  // 少し待ってからダッシュボードを更新（GASの書き込みが完了するまでの猶予）
+  setTimeout(loadDashboard, 2000);
+}
+
+// ══════════════════════════════════════════════════════
+//  履歴
+// ══════════════════════════════════════════════════════
+async function loadHistory() {
+  if (!currentName || !GAS_URL) return;
+  document.getElementById('history-list').innerHTML =
+    '<div class="loading"><div class="spinner"></div><div>よみこみ中…</div></div>';
+  try {
+    const res = await jsonpCall({ action: 'getHistory', userName: currentName, className: currentClass });
+    if (!res.success) return;
+    historyData = res.history;
+    renderHistory();
+  } catch(e) { document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="e">😢</div><p>よみこみに しっぱいしました</p></div>'; }
+}
+
+function sortHistory(btn, key) {
+  if (sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = key === 'author'; }
+  document.querySelectorAll('.sort-btn').forEach(b => {
+    b.classList.remove('active');
+    b.textContent = b.textContent.replace(/ [↑↓]$/, '');
+  });
+  btn.classList.add('active');
+  btn.textContent += sortAsc ? ' ↑' : ' ↓';
+  renderHistory();
+}
+
+function renderHistory() {
+  const data = [...historyData].sort((a, b) => {
+    let va, vb;
+    if      (sortKey==='date')      { va=a.date;           vb=b.date; }
+    else if (sortKey==='author')    { va=a.author;         vb=b.author; }
+    else if (sortKey==='savings')   { va=Number(a.savings);vb=Number(b.savings); }
+    else if (sortKey==='completed') { va=a.completed?1:0;  vb=b.completed?1:0; }
+    if (va<vb) return sortAsc?-1:1;
+    if (va>vb) return sortAsc? 1:-1;
+    return 0;
+  });
+  const el = document.getElementById('history-list');
+  if (!data.length) {
+    el.innerHTML='<div class="empty-state"><div class="e">📚</div><p>まだきろくがないよ。<br>「きろく」から ちょきんを はじめよう！</p></div>';
+    return;
+  }
+  el.innerHTML = data.map(historyHTML).join('');
+}
+
+function historyHTML(h) {
+  const pct = h.totalPages>0 ? Math.round(Number(h.pagesRead)/Number(h.totalPages)*100) : 0;
+  return `<div class="history-item">
+    <div class="history-icon">${h.completed?'📗':'📘'}</div>
+    <div class="history-info">
+      <div class="history-book">${escHtml(h.title)}${h.completed?'<span class="badge-complete">よみきった！</span>':''}</div>
+      <div class="history-meta">${h.date}　✏️ ${escHtml(h.author)}　📄 ${h.pagesRead}/${h.totalPages}p (${pct}%)</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
+    </div>
+    <div class="history-amount">+${Number(h.savings).toLocaleString()}<br><span style="font-size:.68rem;color:#AAA;">円</span></div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+//  ランキング
+// ══════════════════════════════════════════════════════
+async function loadRanking() {
+  if (!GAS_URL) return;
+  document.getElementById('ranking-list').innerHTML =
+    '<div class="loading"><div class="spinner"></div><div>よみこみ中…</div></div>';
+  try {
+    const res = await jsonpCall({ action: 'getRanking' });
+    if (res.success) renderRanking(res.ranking);
+  } catch(e) { document.getElementById('ranking-list').innerHTML = '<div class="empty-state"><div class="e">😢</div><p>よみこみに しっぱいしました</p></div>'; }
+}
+
+function renderRanking(data) {
+  const el = document.getElementById('ranking-list');
+  if (!data||!data.length) {
+    el.innerHTML='<div class="empty-state"><div class="e">🏆</div><p>まだランキングがないよ。</p></div>';
+    return;
+  }
+  el.innerHTML = data.map((r,i) => {
+    const nc = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
+    const md = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    return `<div class="rank-item" onclick="showUserBooks('${escAttr(r.userName)}')">
+      <div class="rank-num ${nc}">${md}</div>
+      <div class="rank-info">
+        <div class="rank-name">${escHtml(r.userName)}</div>
+        <div class="rank-class">${escHtml(r.className)} ${escHtml(r.number||'')}</div>
+        <div class="rank-stats">
+          <span class="rank-stat">📚 ${r.bookCount}さつ</span>
+          <span class="rank-stat">✅ よみきり${r.completedCount}さつ</span>
+        </div>
+      </div>
+      <div class="rank-amount">${Number(r.totalSavings).toLocaleString()}<span style="font-size:.68rem;color:#CCC;">円</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  ユーザーの本モーダル
+// ══════════════════════════════════════════════════════
+async function showUserBooks(userName) {
+  document.getElementById('modal-title').textContent = '📚 ' + userName + ' さんのほん';
+  document.getElementById('modal-books').innerHTML =
+    '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('user-modal').classList.add('open');
+  try {
+    const res = await jsonpCall({ action: 'getUserBooks', userName });
+    const el  = document.getElementById('modal-books');
+    if (!res.success||!res.books.length) {
+      el.innerHTML='<div class="empty-state"><div class="e">📖</div><p>きろくがありません</p></div>'; return;
+    }
+    el.innerHTML = res.books.map(b => `<div class="modal-book">
+      <div class="modal-book-icon">${b.completed?'📗':'📘'}</div>
+      <div class="modal-book-info">
+        <div class="modal-book-title">${escHtml(b.title)}${b.completed?' ✅':''}</div>
+        <div class="modal-book-author">✏️ ${escHtml(b.author)}</div>
+      </div>
+      <div style="font-weight:800;color:var(--gold2);font-size:.85rem;">+${Number(b.savings).toLocaleString()}円</div>
+    </div>`).join('');
+  } catch(e) {}
+}
+
+function closeModal(e) {
+  if (e.target.id === 'user-modal') e.target.classList.remove('open');
+}
+
+// ══════════════════════════════════════════════════════
+//  ユーティリティ
+// ══════════════════════════════════════════════════════
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3200);
+}
+function animateAmount(id, target) {
+  const el = document.getElementById(id);
+  const dur = 800; const s = performance.now();
+  const tick = now => {
+    const t = Math.min((now-s)/dur,1);
+    el.textContent = Math.round(target*easeOut(t)).toLocaleString();
+    if (t<1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+function easeOut(t) { return 1-Math.pow(1-t,3); }
+function fireConfetti(isComplete) {
+  if (isComplete) {
+    confetti({particleCount:180,spread:80,origin:{y:.6},colors:['#FFD700','#FF6B9D','#C084FC','#4ADE80','#60A5FA']});
+    setTimeout(()=>confetti({particleCount:100,spread:100,origin:{y:.5}}),300);
+  } else {
+    confetti({particleCount:60,spread:55,origin:{y:.7},colors:['#FFD700','#FF6B9D']});
+  }
+}
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+}
+function escHtml(s) {
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escAttr(s) { return String(s).replace(/'/g,"\'"); }
+</script>
+</body>
+</html>
