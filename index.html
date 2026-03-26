@@ -380,7 +380,10 @@ ruby rt { font-size:.55em; color:var(--pink); }
         <div class="loading"><div class="spinner"></div><div>よみこみ中…</div></div>
       </div>
     </div>
-    <button class="btn-link" onclick="changeUser()" style="display:block;text-align:center;margin:0 auto;">🔄 べつのひとに きりかえる</button>
+    <div style="display:flex;justify-content:center;gap:16px;margin-top:4px;">
+      <button class="btn-link" onclick="changeUser()">🔄 べつのひとに きりかえる</button>
+      <button class="btn-link" onclick="openGasUrlModal()" style="color:var(--blue);">⚙ GAS URL</button>
+    </div>
   </div>
 </div>
 
@@ -471,6 +474,24 @@ ruby rt { font-size:.55em; color:var(--pink); }
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-title">📚 よんでいる本</div>
     <div id="modal-books"></div>
+  </div>
+</div>
+
+<!-- GAS URL 変更モーダル -->
+<div class="modal-overlay" id="gasurl-modal" onclick="closeGasModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚙ GAS URLを設定・変更</div>
+    <p style="font-size:.78rem;color:#888;line-height:1.7;margin-bottom:14px;">
+      GASをデプロイしたときの「ウェブアプリのURL」を<br>貼り付けてね。
+    </p>
+    <div class="form-group">
+      <label>GAS デプロイURL</label>
+      <input type="url" id="modal-gasurl"
+        placeholder="https://script.google.com/macros/s/.../exec"
+        style="font-size:.78rem;">
+    </div>
+    <button class="btn btn-primary" onclick="saveGasUrlFromModal()">💾 保存</button>
   </div>
 </div>
 
@@ -567,11 +588,19 @@ window.addEventListener('DOMContentLoaded', () => {
   if (sNum)   document.getElementById('setup-num').value    = sNum;
   if (GAS_URL) document.getElementById('setup-gasurl').value = GAS_URL;
 
-  if (sName && sGrade && sCls && GAS_URL) {
+  if (sName && sGrade && sCls) {
     currentName = sName; currentGrade = sGrade;
     currentCls  = sCls;  currentNum   = sNum;
     currentClass = sGrade + sCls;
     showDashboard();
+    // GAS URLが未設定なら確実にモーダルを開く
+    if (!GAS_URL) {
+      // rAF2回待つことでDOM描画が確実に終わってからopen
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const m = document.getElementById('gasurl-modal');
+        if (m) m.classList.add('open');
+      }));
+    }
   } else {
     showSetup();
   }
@@ -678,8 +707,17 @@ async function loadDashboard() {
 }
 
 // ══════════════════════════════════════════════════════
-//  カメラ（GitHub PagesなのでgetUserMedia使用可）
+//  カメラスキャン
+//  ① mediaStream を video に流す
+//  ② 別スレッド(setInterval)でvideoフレームをcanvasに描画
+//     → コントラスト強調 → ImageData を ZXing に渡す
+//  decodeFromCanvas/decodeFromStream の代わりに
+//  低レベルの decodeFromImageSource を使って確実にデコードする
 // ══════════════════════════════════════════════════════
+let scanCanvas = null;
+let scanCtx    = null;
+let scanTimer  = null;
+
 async function toggleCamera() {
   if (scanning) { stopCamera(); return; }
 
@@ -689,31 +727,61 @@ async function toggleCamera() {
 
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+      video: {
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 1920, min: 640 },
+        height: { ideal: 1080, min: 480 }
+      },
       audio: false
     });
+
     const video = document.getElementById('video');
     video.srcObject = mediaStream;
     await video.play().catch(() => {});
+
+    // デコード用canvasを生成（DOMに追加しない・非表示）
+    scanCanvas = document.createElement('canvas');
+    scanCtx    = scanCanvas.getContext('2d', { willReadFrequently: true });
 
     document.getElementById('camera-wrapper').classList.add('active');
     document.getElementById('scan-btn').textContent = '⏹ カメラを とめる';
     scanning = true;
 
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,
-      [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8]);
+    // ZXing: MultiFormatReader を直接使う（低レベルAPI）
+    const hints = new ZXing.Map();
     hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    codeReader = new ZXing.BrowserMultiFormatReader(hints);
-    codeReader.decodeFromStream(mediaStream, video, result => {
-      if (!result) return;
-      const isbn = result.getText().replace(/[^0-9X]/gi, '');
-      if (isbn.length === 13 || isbn.length === 10) {
-        document.getElementById('isbn-input').value = isbn;
-        stopCamera();
-        fetchBook();
-      }
-    });
+    const mfReader = new ZXing.MultiFormatReader();
+    mfReader.setHints(hints);
+
+    scanTimer = setInterval(() => {
+      if (!scanning) return;
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh || video.readyState < 2) return;
+
+      // 中央横帯(30%)を切り出してcanvasに描画 + コントラスト強調
+      const cropH = Math.round(vh * 0.30);
+      const cropY = Math.round(vh * 0.35);
+      scanCanvas.width  = vw;
+      scanCanvas.height = cropH;
+      scanCtx.filter = 'contrast(2.0) brightness(1.05) grayscale(1)';
+      scanCtx.drawImage(video, 0, cropY, vw, cropH, 0, 0, vw, cropH);
+      scanCtx.filter = 'none';
+
+      try {
+        const imgData   = scanCtx.getImageData(0, 0, vw, cropH);
+        const luminance = new ZXing.RGBLuminanceSource(imgData.data, vw, cropH);
+        const bitmap    = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
+        const result    = mfReader.decode(bitmap);
+        const isbn      = result.getText().replace(/[^0-9X]/gi, '');
+        if (isbn.length === 13 || isbn.length === 10) {
+          document.getElementById('isbn-input').value = isbn;
+          stopCamera();
+          fetchBook();
+        }
+      } catch(_) { /* DecodeNotFound: 毎フレーム投げられるので無視 */ }
+    }, 150);
+
   } catch(e) {
     stopCamera();
     toast('📵 カメラエラー: ' + e.message);
@@ -721,8 +789,10 @@ async function toggleCamera() {
 }
 
 function stopCamera() {
+  if (scanTimer)   { clearInterval(scanTimer); scanTimer = null; }
   if (codeReader)  { try { codeReader.reset(); } catch(_){} codeReader = null; }
   if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  scanCanvas = null; scanCtx = null;
   document.getElementById('camera-wrapper').classList.remove('active');
   document.getElementById('scan-btn').textContent = '📷 カメラで ISBNを よみとる';
   scanning = false;
@@ -964,6 +1034,25 @@ async function showUserBooks(userName) {
 
 function closeModal(e) {
   if (e.target.id === 'user-modal') e.target.classList.remove('open');
+}
+
+function openGasUrlModal() {
+  document.getElementById('modal-gasurl').value = GAS_URL || localStorage.getItem(LS.GASURL) || '';
+  document.getElementById('gasurl-modal').classList.add('open');
+}
+function closeGasModal(e) {
+  if (e.target.id === 'gasurl-modal') e.target.classList.remove('open');
+}
+function saveGasUrlFromModal() {
+  const url = document.getElementById('modal-gasurl').value.trim();
+  if (!url.startsWith('https://script.google.com/')) {
+    toast('GASのURLをかくにんしてね'); return;
+  }
+  GAS_URL = url;
+  localStorage.setItem(LS.GASURL, url);
+  document.getElementById('gasurl-modal').classList.remove('open');
+  toast('✅ GAS URLを保存したよ！');
+  loadDashboard();
 }
 
 // ══════════════════════════════════════════════════════
